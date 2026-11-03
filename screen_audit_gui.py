@@ -9,6 +9,7 @@ process (screen_audit.py run). Open the window again any time to check on it.
 import argparse
 import datetime as dt
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -24,7 +25,7 @@ import macos  # noqa: E402
 import screen_audit as sa  # noqa: E402
 
 TITLE = "Screen Audit"
-CONFIG = HERE / "config.json"
+CONFIG = Path(os.environ.get("SCREEN_AUDIT_CONFIG", HERE / "config.json"))  # the same file load_config reads
 system_dark = macos.system_dark
 
 

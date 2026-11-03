@@ -305,6 +305,15 @@ class Mac(Base):
 
 
 
+class WindowConfig(unittest.TestCase):
+    def test_window_saves_to_the_file_the_engine_reads(self):
+        try:
+            import screen_audit_gui as gui
+        except ImportError:
+            self.skipTest("needs pywebview")
+        self.assertEqual(str(gui.CONFIG), os.environ["SCREEN_AUDIT_CONFIG"])
+
+
 class ClaudeCheck(Base):
     def run_with(self, returncode=0, stdout="", stderr=""):
         fake = mock.Mock(returncode=returncode, stdout=stdout, stderr=stderr)
