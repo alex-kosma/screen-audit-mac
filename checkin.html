@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en" class="i18n-pending">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Screen Audit check-in</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="components.css">
+<style>
+.i18n-pending body { opacity: 0; }
+/* Layout only. Everything else is the kit. See DESIGN_RULES.md. */
+html, body { height: 100%; overflow: hidden; }
+.view { height: 100%; gap: var(--s4); }
+.ask { display: flex; flex-direction: column; gap: var(--s1); }
+.ask .lead { font-size: var(--fs-lead); line-height: 1.4; user-select: text; }
+.ask .sub { margin-top: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+textarea { resize: none; user-select: text; }
+#a { flex: 1; min-height: 72px; }
+.blocker { display: flex; flex-direction: column; gap: var(--s1); }
+#b { height: 58px; }
+.actions { display: flex; align-items: center; gap: var(--s2); }
+.actions .push { margin-left: auto; }
+.tools-row { margin: 0 -10px -8px; }
+</style>
+</head>
+<body class="desktop">
+<script src="icons.js"></script>
+<script src="i18n.js"></script>
+
+<main class="view">
+  <div class="label"><span class="status"><span class="dot sm warn"></span><span data-i18n="checkin">Check-in</span></span><span data-i18n="esc_skip">Esc to skip</span></div>
+
+  <div class="ask">
+    <div id="q" class="lead"><span class="sk" style="width:90%;height:18px"></span></div>
+    <p id="front" class="sub"></p>
+  </div>
+
+  <textarea id="a" placeholder="A few words is enough" data-i18n-ph="answer_ph" spellcheck="true" disabled></textarea>
+
+  <div class="blocker">
+    <label class="label" for="b"><span data-i18n="blocking">Anything blocking you?</span><span data-i18n="optional">Optional</span></label>
+    <textarea id="b" placeholder="Waiting on someone, a bug, missing info..." data-i18n-ph="blocker_ph" spellcheck="true" disabled></textarea>
+  </div>
+
+  <div class="actions">
+    <button id="save" class="btn primary" disabled onclick="finish('answered')"><svg class="i"><use href="#i-check"/></svg><span data-i18n="save_answer">Save answer</span></button>
+    <button class="btn quiet" onclick="finish('skipped')" data-i18n="skip">Skip</button>
+    <button class="btn quiet push" onclick="finish('pause')"><svg class="i"><use href="#i-pause"/></svg><span data-i18n="pause_60">Pause 1 hour</span></button>
+  </div>
+</main>
+
+<div id="toast" class="toast"><svg class="i"><use href="#i-check"/></svg><span id="toast-text"></span></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const api = (name, ...args) => window.pywebview.api[name](...args);
+let done = false, timer;
+
+function toast(text) {
+  $("toast-text").textContent = text;
+  $("toast").classList.add("show");
+}
+
+async function finish(result) {
+  if (done) return;
+  const answer = $("a").value.trim(), blocker = $("b").value.trim();
+  if (result === "answered" && !answer && !blocker) return;
+  done = true;
+  clearTimeout(timer);
+  $("a").disabled = $("b").disabled = true;
+  document.querySelectorAll("button").forEach(b => b.disabled = true);
+  if (result === "answered") {
+    // the button itself confirms; kept full-strength rather than greyed out
+    const b = $("save");
+    b.style.width = b.offsetWidth + "px";  // lock size so the label swap doesn't resize it
+    b.style.justifyContent = "center";
+    b.disabled = false;
+    b.style.pointerEvents = "none";
+    b.style.background = "var(--ok)";
+    b.style.borderColor = "var(--ok)";
+    b.style.color = "#fff";
+    b.innerHTML = '<svg class="i"><use href="#i-check"/></svg>' + t("saved");
+  } else if (result === "pause") toast(t("toast_capture_paused"));
+  await api("finish", result, answer, blocker);
+}
+
+const typed = () => !!($("a").value.trim() || $("b").value.trim());
+["a", "b"].forEach(id => $(id).addEventListener("input", () => { $("save").disabled = !typed(); }));
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") finish("skipped");
+  else if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) finish("answered");
+});
+
+function show(info) {
+  applyLang(info.lang);
+  $("q").textContent = info.question;
+  $("front").textContent = info.window ? t("in_front", { w: info.window }) : "";
+  $("a").disabled = $("b").disabled = false;
+  $("a").focus();
+  // an untouched check-in closes itself
+  timer = setTimeout(() => { if (!typed()) finish("timeout"); }, info.timeout_min * 60000);
+}
+
+window.addEventListener("pywebviewready", () => api("info").then(show));
+</script>
+</body>
+</html>

@@ -1,0 +1,693 @@
+<!doctype html>
+<html lang="en" class="i18n-pending">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Screen Audit</title>
+<style>
+.i18n-pending body { opacity: 0; }
+/* Design rules: see DESIGN_RULES.md. Grayscale chrome, one ink accent,
+   colour only for recording state. Type 12/13/15/22. Radius 8, panels 10. */
+:root {
+  --bg: #fbfbfa; --surface: #ffffff; --border: #e8e7e4; --border-strong: #d6d5d1;
+  --text: #1b1b1a; --muted: #6e6d69; --faint: #a19f9a;
+  --ink: #1b1b1a; --on-ink: #ffffff; --hover: #f3f2ef; --track: #edece9;
+  --rec: #d1453b; --rec-soft: rgba(209,69,59,.14);
+  --pause: #c48a12; --pause-soft: rgba(196,138,18,.14);
+  --idle: #a19f9a;
+  --alert-bg: #fdf3f2; --alert-border: #f3d6d3; --alert-text: #9c2f27;
+  --skeleton: #efeeeb;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #16171a; --surface: #1c1d21; --border: #2a2b30; --border-strong: #393a40;
+    --text: #ececea; --muted: #9b9a96; --faint: #67666a;
+    --ink: #ececea; --on-ink: #16171a; --hover: #232429; --track: #2a2b30;
+    --rec: #ef6b61; --rec-soft: rgba(239,107,97,.16);
+    --pause: #e2ab3f; --pause-soft: rgba(226,171,63,.16);
+    --idle: #67666a;
+    --alert-bg: #2a1c1b; --alert-border: #4a2b29; --alert-text: #f3a49c;
+    --skeleton: #24252a;
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; margin: 0; }
+html, body { height: 100%; }
+body {
+  background: var(--bg); color: var(--text);
+  font: 13px/1.5 -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased; user-select: none; overflow-y: auto;
+}
+body::-webkit-scrollbar { width: 8px; }
+body::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 8px; }
+.view { padding: 20px 24px 20px; display: flex; flex-direction: column; gap: 20px; }
+.hidden { display: none !important; }
+svg.i { width: 16px; height: 16px; flex: none; stroke: currentColor; fill: none;
+        stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+
+/* header */
+.top { display: flex; align-items: center; justify-content: space-between; height: 32px; }
+.icon-btn { width: 32px; height: 32px; display: grid; place-items: center; border: 0; border-radius: 8px;
+            background: transparent; color: var(--muted); cursor: pointer; }
+.icon-btn:hover { background: var(--hover); color: var(--text); }
+
+/* status */
+.state { display: flex; align-items: center; gap: 10px; }
+.dot { width: 10px; height: 10px; border-radius: 50%; background: var(--idle); flex: none; }
+.dot.rec { background: var(--rec); box-shadow: 0 0 0 4px var(--rec-soft); animation: pulse 2s ease-in-out infinite; }
+.dot.paused { background: var(--pause); box-shadow: 0 0 0 4px var(--pause-soft); }
+@keyframes pulse { 50% { box-shadow: 0 0 0 7px var(--rec-soft); } }
+h1 { font-size: 22px; line-height: 1.25; font-weight: 600; letter-spacing: -.01em; }
+.sub { color: var(--muted); margin-top: 4px; }
+.hero { display: flex; flex-direction: column; gap: 16px; }
+
+/* buttons */
+.btn { height: 36px; padding: 0 14px; border-radius: 8px; border: 1px solid var(--border-strong);
+       background: var(--surface); color: var(--text); font: inherit; font-weight: 500;
+       display: inline-flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;
+       white-space: nowrap; }
+.btn:hover { background: var(--hover); }
+.btn:disabled { opacity: .5; cursor: default; }
+.btn.primary { height: 40px; background: var(--ink); color: var(--on-ink); border-color: var(--ink); font-size: 13px; }
+.btn.primary:hover { opacity: .9; background: var(--ink); }
+.btn.quiet { border-color: transparent; background: transparent; color: var(--muted); padding: 0 10px; }
+.btn.quiet:hover { background: var(--hover); color: var(--text); }
+.btn.block { width: 100%; }
+.row { display: flex; gap: 8px; align-items: center; }
+.row > .grow { flex: 1; }
+
+/* sections */
+section { display: flex; flex-direction: column; gap: 10px; }
+.label { display: flex; justify-content: space-between; align-items: baseline;
+         font-size: 12px; font-weight: 600; color: var(--muted); }
+.label span:last-child { font-weight: 400; }
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
+
+/* progress */
+.progress-head { display: flex; justify-content: space-between; align-items: baseline; }
+.progress-head b { font-size: 15px; font-weight: 600; }
+.progress-head span { color: var(--muted); }
+.bar { height: 4px; background: var(--track); border-radius: 4px; overflow: hidden; }
+.bar > div { height: 100%; background: var(--ink); border-radius: 4px; transition: width .4s ease; }
+.note { color: var(--muted); }
+.audit { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+select, input[type=number], input[type=text], input[type=time], textarea {
+  font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--border-strong);
+  border-radius: 8px; height: 36px; padding: 0 10px; outline: none; }
+select:focus, input:focus, textarea:focus { border-color: var(--text); }
+textarea { height: auto; padding: 8px 10px; resize: vertical; width: 100%; line-height: 1.5; user-select: text; }
+.report-msg { display: flex; gap: 8px; align-items: flex-start; color: var(--muted); }
+.spinner { width: 14px; height: 14px; margin-top: 3px; border: 2px solid var(--track); border-top-color: var(--text);
+           border-radius: 50%; animation: spin .8s linear infinite; flex: none; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* today list */
+.list { padding: 4px 16px; }
+.list > div { display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--border); }
+.list > div:last-child { border-bottom: 0; }
+.list dt { color: var(--muted); }
+.list dd { font-variant-numeric: tabular-nums; font-weight: 500; }
+
+/* latest summary */
+.summary { padding: 14px 16px; color: var(--text); display: -webkit-box; -webkit-line-clamp: 5;
+           -webkit-box-orient: vertical; overflow: hidden; user-select: text; }
+.summary.empty { color: var(--muted); }
+
+/* alert */
+.alert { display: flex; gap: 10px; padding: 10px 12px; border-radius: 8px; background: var(--alert-bg);
+         border: 1px solid var(--alert-border); color: var(--alert-text); }
+.alert svg { margin-top: 2px; }
+
+/* footer tools */
+.tools { display: flex; justify-content: space-between; flex-wrap: wrap; margin: -8px -10px 0; }
+
+/* skeleton */
+.sk { background: var(--skeleton); border-radius: 6px; animation: sk 1.4s ease-in-out infinite; }
+@keyframes sk { 50% { opacity: .55; } }
+
+/* settings */
+.field { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 12px 16px;
+         border-bottom: 1px solid var(--border); }
+.field:last-child { border-bottom: 0; }
+.field .hint { color: var(--muted); font-size: 12px; }
+.field input[type=number] { width: 72px; text-align: right; }
+.field input[type=time] { width: 96px; }
+.field input:disabled { opacity: .5; }
+.field.stack { flex-direction: column; align-items: stretch; gap: 8px; }
+.switch { position: relative; width: 36px; height: 20px; flex: none; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.switch span { position: absolute; inset: 0; background: var(--border-strong); border-radius: 20px; cursor: pointer;
+               transition: background .15s; }
+.switch span::after { content: ""; position: absolute; width: 16px; height: 16px; left: 2px; top: 2px;
+                      border-radius: 50%; background: var(--surface); transition: transform .15s; }
+.switch input:checked + span { background: var(--ink); }
+.switch input:checked + span::after { transform: translateX(16px); background: var(--on-ink); }
+.path { color: var(--faint); font-size: 12px; word-break: break-all; user-select: text; }
+
+/* permissions (first run) */
+.perm { padding: 4px 16px; }
+.perm .field { padding: 12px 0; }
+.perm .field .btn { align-self: flex-start; }
+.perm .after { color: var(--muted); font-size: 12px; padding-bottom: 12px; }
+.perm-state { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); margin-top: 2px; }
+.perm-state .dot { width: 8px; height: 8px; }
+.perm-state .dot.ok { background: var(--ink); }
+.perm-state .dot.missing { background: var(--pause); }
+
+/* Claude setup */
+.steps { margin: 0; padding: 0 0 0 18px; display: flex; flex-direction: column; gap: 8px; }
+.cmd { display: flex; gap: 8px; align-items: center; margin-top: 6px; }
+.cmd code { flex: 1; min-width: 0; font: 12px/1.5 ui-monospace, Menlo, monospace; background: var(--bg);
+            border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px; user-select: text;
+            word-break: break-all; }
+.claude-msg { font: 12px/1.5 ui-monospace, Menlo, monospace; color: var(--muted); word-break: break-word; user-select: text; }
+
+/* storage */
+.subnote { color: var(--muted); font-size: 12px; }
+.subnote.warn { color: var(--pause); }
+.list dd.warn { color: var(--pause); }
+
+input[type=text] { width: 100%; min-width: 0; user-select: text; }
+.preview { font-size: 12px; color: var(--muted); word-break: break-all; }
+.preview.warn { color: var(--pause); }
+.form-error { color: var(--alert-text); background: var(--alert-bg); border: 1px solid var(--alert-border);
+              border-radius: 8px; padding: 10px 12px; }
+
+/* pinned save */
+.save-bar { position: sticky; bottom: 0; background: var(--bg); padding: 12px 0 4px; margin-bottom: -4px; z-index: 1; }
+
+/* toast */
+.toast { position: fixed; left: 50%; bottom: 20px; transform: translate(-50%, 8px); opacity: 0;
+         background: var(--ink); color: var(--on-ink); padding: 8px 14px; border-radius: 8px; font-weight: 500;
+         transition: opacity .15s, transform .15s; pointer-events: none; display: flex; gap: 8px; align-items: center;
+         max-width: calc(100% - 32px); }
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+</style>
+</head>
+<body>
+<script src="i18n.js"></script>
+
+<!-- Lucide icons (ISC licence), one stroke weight, 16px everywhere -->
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i-settings" viewBox="0 0 24 24"><line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><rect x="14" y="4" width="4" height="16" rx="1"/><rect x="6" y="4" width="4" height="16" rx="1"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 24 24"><rect width="16" height="16" x="4" y="4" rx="2"/></symbol>
+  <symbol id="i-record" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/></symbol>
+  <symbol id="i-message" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></symbol>
+  <symbol id="i-external" viewBox="0 0 24 24"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></symbol>
+</svg>
+
+<!-- ============================== main -->
+<main id="main" class="view">
+  <div class="hero">
+    <div style="position:relative">
+      <button class="icon-btn" title="Settings" data-i18n-title="settings" style="position:absolute;right:-8px;top:-2px" onclick="openSettings()"><svg class="i"><use href="#i-settings"/></svg></button>
+      <div class="state"><span id="dot" class="dot"></span><h1 id="state"><span class="sk" style="display:inline-block;width:160px;height:24px"></span></h1></div>
+      <p id="sub" class="sub"><span class="sk" style="display:inline-block;width:240px;height:12px"></span></p>
+    </div>
+    <div id="alert" class="alert hidden"><svg class="i"><use href="#i-alert"/></svg><div id="alert-text"></div></div>
+    <div id="controls"><div class="sk" style="height:40px"></div></div>
+  </div>
+
+  <section id="perms" class="hidden">
+    <div class="label"><span data-i18n="perm_title">Before you start: two permissions</span></div>
+    <div class="panel perm">
+      <p class="note" style="padding-top:12px" data-i18n="perm_intro">macOS asks you before any app can see your screen.</p>
+      <div class="field stack"><div><span data-i18n="perm_screen">Screen Recording</span>
+          <div class="hint" data-i18n="perm_screen_hint">Required.</div>
+          <div class="perm-state"><span id="perm-screen-dot" class="dot"></span><span id="perm-screen-state"></span></div></div>
+        <button id="perm-screen-btn" class="btn" onclick="openPermission('screen')"><svg class="i"><use href="#i-external"/></svg><span data-i18n="perm_open">Open System Settings</span></button></div>
+      <div class="field stack"><div><span data-i18n="perm_ax">Accessibility</span>
+          <div class="hint" data-i18n="perm_ax_hint">Recommended.</div>
+          <div class="perm-state"><span id="perm-ax-dot" class="dot"></span><span id="perm-ax-state"></span></div></div>
+        <button id="perm-ax-btn" class="btn" onclick="openPermission('accessibility')"><svg class="i"><use href="#i-external"/></svg><span data-i18n="perm_open">Open System Settings</span></button></div>
+      <p class="after" data-i18n="perm_after">macOS applies the change after you quit and reopen.</p>
+    </div>
+    <button id="perm-hide" class="btn quiet hidden" style="align-self:flex-start;margin:-6px 0 0 -10px" onclick="dismissPermissions()" data-i18n="perm_hide">Hide this</button>
+  </section>
+
+  <section id="claude" class="hidden">
+    <div class="label"><span id="claude-title">Claude isn't connected</span></div>
+    <div class="panel audit">
+      <p id="claude-intro" class="note">Recording works, but Claude writes the summaries.</p>
+      <ol id="claude-steps" class="steps">
+        <li data-i18n="claude_step_terminal">Open Terminal.</li>
+        <li id="claude-step-install"><span id="claude-step-install-text">Install Claude Code:</span>
+          <div class="cmd"><code id="claude-cmd"></code><button class="btn" onclick="copyInstall()" data-i18n="copy">Copy</button></div></li>
+        <li id="claude-step-login">Type claude, press Return and log in.</li>
+        <li data-i18n="claude_step_back">Come back here and press Check again.</li>
+      </ol>
+      <p id="claude-msg" class="claude-msg hidden"></p>
+      <p id="claude-path-hint" class="subnote hidden">Installed it and this still shows?</p>
+      <div class="row">
+        <button id="claude-btn" class="btn" onclick="checkClaude()"></button>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="label"><span data-i18n="audit_progress">Audit progress</span></div>
+    <div class="panel audit">
+      <div class="progress-head"><b id="day">&nbsp;</b><span id="hours"></span></div>
+      <div class="bar"><div id="bar" style="width:0"></div></div>
+      <p id="audit-note" class="note">&nbsp;</p>
+      <div class="row">
+        <button id="report-btn" class="btn grow" onclick="writeReport()"><svg class="i"><use href="#i-file"/></svg><span data-i18n="write_report">Write report</span></button>
+        <select id="report-days" title="How many days the report covers" data-i18n-title="report_days_title">
+          <option value="1" data-i18n="last_1">Last day</option><option value="3" data-i18n="last_3">Last 3 days</option>
+          <option value="7" selected data-i18n="last_7">Last 7 days</option><option value="14" data-i18n="last_14">Last 14 days</option><option value="30" data-i18n="last_30">Last 30 days</option>
+        </select>
+      </div>
+      <div id="report-msg" class="report-msg hidden"><span id="report-spin" class="spinner"></span><span id="report-text"></span></div>
+      <button id="open-report" class="btn quiet hidden" style="align-self:flex-start;margin-left:-10px" onclick="api('open_report')" data-i18n="open_last_report">Open last report</button>
+    </div>
+  </section>
+
+  <section>
+    <div class="label"><span data-i18n="today">Today</span></div>
+    <dl class="panel list">
+      <div><dt data-i18n="active_time">Active time</dt><dd id="t-active">–</dd></div>
+      <div><dt data-i18n="screenshots_kept">Screenshots kept</dt><dd id="t-frames">–</dd></div>
+      <div><dt data-i18n="blocks_summarised">Blocks summarised</dt><dd id="t-blocks">–</dd></div>
+      <div><dt data-i18n="checkins_answered">Check-ins answered</dt><dd id="t-checkins">–</dd></div>
+      <div id="t-cost-row"><dt data-i18n="claude_usage">Claude usage</dt><dd id="t-cost">–</dd></div>
+    </dl>
+  </section>
+
+  <section>
+    <div class="label"><span data-i18n="todays_log">Today's log</span><span id="daily-when"></span></div>
+    <div class="panel audit">
+      <p id="daily-note" class="note">&nbsp;</p>
+      <div id="daily-msg" class="report-msg hidden"><span id="daily-spin" class="spinner"></span><span id="daily-text"></span></div>
+      <div class="row">
+        <button id="daily-btn" class="btn grow" onclick="writeDaily()"><svg class="i"><use href="#i-file"/></svg><span data-i18n="write_todays_log">Write today's log</span></button>
+        <button id="daily-open" class="btn hidden" onclick="api('open_daily')" data-i18n="open">Open</button>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="label"><span data-i18n="latest_summary">Latest summary</span><span id="latest-when"></span></div>
+    <div class="panel"><p id="latest" class="summary empty">&nbsp;</p></div>
+  </section>
+
+  <div class="tools">
+    <button class="btn quiet" onclick="act('checkin','toast_checkin')"><svg class="i"><use href="#i-message"/></svg><span data-i18n="check_in_now">Check in now</span></button>
+    <button class="btn quiet" onclick="act('summarise','toast_summarise')"><svg class="i"><use href="#i-refresh"/></svg><span data-i18n="summarise_now">Summarise now</span></button>
+    <button class="btn quiet" onclick="api('open_data')"><svg class="i"><use href="#i-folder"/></svg><span data-i18n="open_folder">Open folder</span></button>
+  </div>
+</main>
+
+<!-- ============================== settings -->
+<main id="settings" class="view hidden">
+  <div class="top">
+    <button class="btn quiet" style="margin-left:-10px" onclick="closeSettings()"><svg class="i"><use href="#i-back"/></svg><span data-i18n="back">Back</span></button>
+  </div>
+  <h1 data-i18n="settings">Settings</h1>
+
+  <section>
+    <div class="label"><span data-i18n="section_recording">Recording</span></div>
+    <div class="panel">
+      <div class="field stack"><div><span data-i18n="save_in">Save screenshots in</span>
+        <div class="hint" data-i18n="save_in_hint">A "Screen Audit frames" folder is created here. Leave empty for the default</div></div>
+        <div class="row"><input id="s-frames" type="text" spellcheck="false" placeholder="Default (inside the app folder)" data-i18n-ph="frames_ph">
+          <button class="btn" onclick="chooseFolder()"><svg class="i"><use href="#i-folder"/></svg><span data-i18n="choose">Choose</span></button></div>
+        <div class="row" style="justify-content:space-between;align-items:flex-start">
+          <p id="s-frames-preview" class="preview"></p>
+          <button id="s-frames-reset" class="btn quiet hidden" style="height:24px;margin:-2px -10px 0 0" onclick="useDefaultFolder()" data-i18n="use_default">Use default</button>
+        </div></div>
+      <div class="field"><div><span data-i18n="interval">Screenshot every</span><div class="hint" data-i18n="interval_hint">Longer means less disk and less detail</div></div>
+        <select id="s-interval"></select></div>
+      <div class="field"><div><span data-i18n="keep">Keep screenshots for</span><div class="hint" data-i18n="keep_hint">Days. Summaries are kept for good</div></div>
+        <input id="s-keep" type="number" min="1" max="60"></div>
+      <div class="field"><div><span data-i18n="startup">Start recording when you log in</span><div class="hint" data-i18n="startup_hint">From the next login</div></div>
+        <label class="switch"><input id="s-startup" type="checkbox"><span></span></label></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="label"><span data-i18n="section_storage">Storage</span></div>
+    <dl class="panel list">
+      <div><dt data-i18n="st_frames">Screenshots</dt><dd id="st-frames">–</dd></div>
+      <div><dt data-i18n="st_data">Logs and summaries</dt><dd id="st-data">–</dd></div>
+      <div><dt data-i18n="st_reports">Reports</dt><dd id="st-reports">–</dd></div>
+      <div><dt data-i18n="st_free">Free on this disk</dt><dd id="st-free">–</dd></div>
+    </dl>
+    <p id="st-note" class="subnote">&nbsp;</p>
+    <button class="btn quiet" style="align-self:flex-start;margin:-6px 0 0 -10px" onclick="api('open_frames')"><svg class="i"><use href="#i-folder"/></svg><span data-i18n="st_open">Open screenshots folder</span></button>
+  </section>
+
+  <section>
+    <div class="label"><span data-i18n="section_checkins">Check-ins, daily log and audit</span></div>
+    <div class="panel">
+      <div class="field"><div><span data-i18n="checkins_per_day">Check-in questions per day</span><div class="hint" data-i18n="checkins_hint">0 turns them off. 8 is about one every 1 to 1.5 hours</div></div>
+        <input id="s-checkins" type="number" min="0" max="30"></div>
+      <div class="field"><div><span data-i18n="wrapup">End-of-day wrap-up</span><div class="hint" data-i18n="wrapup_hint">Three short questions, then today's log is written</div></div>
+        <label class="switch"><input id="s-wrapup" type="checkbox"><span></span></label></div>
+      <div class="field"><div><span data-i18n="wrapup_time">Wrap-up time</span><div class="hint" data-i18n="wrapup_time_hint">Or the first moment you're at the computer after it</div></div>
+        <input id="s-wrapup-time" type="time"></div>
+      <div class="field"><div><span data-i18n="audit_length">Audit length</span><div class="hint" data-i18n="audit_length_hint">Days to record before the report</div></div>
+        <input id="s-days" type="number" min="1" max="60"></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="label"><span data-i18n="section_ai">AI</span></div>
+    <div class="panel">
+      <div class="field"><div><span data-i18n="ai_label">Summaries, logs and report written by</span><div class="hint" data-i18n="ai_hint">Your screenshots go to that company</div></div>
+        <select id="s-ai"><option value="claude" data-i18n="ai_claude">Claude</option><option value="codex" data-i18n="ai_codex">Codex</option></select></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="label"><span data-i18n="section_language">Language</span></div>
+    <div class="panel">
+      <div class="field"><div><span data-i18n="language">Language</span><div class="hint" data-i18n="language_hint">Also the language Claude writes summaries, questions and logs in</div></div>
+        <select id="s-language"><option value="en">English</option><option value="uk">Українська</option></select></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="label"><span data-i18n="section_privacy">Privacy</span></div>
+    <div class="panel">
+      <div class="field stack"><div><span data-i18n="privacy_label">No screenshot while the window title contains any of these words</span>
+        <div class="hint" data-i18n="privacy_hint">One per line. Upper and lower case are treated the same</div></div>
+        <textarea id="s-privacy" rows="7" spellcheck="false"></textarea></div>
+    </div>
+  </section>
+
+  <div style="display:flex;flex-direction:column;gap:4px;margin-top:-12px">
+    <button class="btn quiet" style="align-self:flex-start;margin-left:-10px" onclick="api('open_context')"><svg class="i"><use href="#i-file"/></svg><span data-i18n="edit_context">Edit the list of what's already automated</span></button>
+    <p class="path" id="s-path"></p>
+  </div>
+  <p id="s-error" class="form-error hidden"></p>
+  <div class="row save-bar">
+    <button class="btn primary grow" onclick="saveSettings()"><svg class="i"><use href="#i-check"/></svg><span data-i18n="save_changes">Save changes</span></button>
+  </div>
+</main>
+
+<div id="toast" class="toast"><svg class="i"><use href="#i-check"/></svg><span id="toast-text"></span></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const api = (name, ...args) => window.pywebview.api[name](...args);
+let last = null, reportDaysTouched = false, busyControls = false;
+
+
+let toastTimer;
+function toast(text) {
+  $("toast-text").textContent = text;
+  $("toast").classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => $("toast").classList.remove("show"), 2600);
+}
+
+function icon(id) { return `<svg class="i"><use href="#i-${id}"/></svg>`; }
+
+function renderControls(s) {
+  const c = $("controls");
+  if (s.state === "stopped") {
+    c.innerHTML = `<button class="btn primary block" onclick="control('start')">${icon("record")}${t("start_recording")}</button>`;
+  } else if (s.state === "paused") {
+    c.innerHTML = `<div class="row"><button class="btn primary grow" onclick="control('resume')">${icon("play")}${t("resume")}</button>
+      <button class="btn quiet" onclick="control('stop')">${icon("stop")}${t("stop_recording")}</button></div>`;
+  } else {
+    c.innerHTML = `<div class="row"><button class="btn grow" onclick="control('pause',15)">${icon("pause")}${t("pause_15")}</button>
+      <button class="btn grow" onclick="control('pause',60)">${t("pause_60")}</button>
+      <button class="btn quiet" onclick="control('stop')">${icon("stop")}${t("stop")}</button></div>`;
+  }
+}
+
+function render(s) {
+  if (s.lang !== LANG || document.documentElement.classList.contains("i18n-pending")) applyLang(s.lang);
+  last = s;
+  const dot = $("dot");
+  dot.className = "dot" + (s.state === "recording" ? " rec" : s.state === "paused" ? " paused" : "");
+  if (s.state === "stopped") {
+    $("state").textContent = t("not_recording");
+    $("sub").textContent = t(s.audit.days ? "sub_start_again" : "sub_start_first");
+  } else if (s.state === "paused") {
+    $("state").textContent = s.paused_forever ? t("paused") : t("paused_until", { t: s.paused_until });
+    $("sub").textContent = t("sub_paused");
+  } else {
+    $("state").textContent = t("recording");
+    $("sub").textContent = (s.since ? t("since", { t: s.since }) : "") + t("every", { n: s.interval });
+  }
+  if (!busyControls) renderControls(s);
+
+  if (s.error) {
+    $("alert-text").textContent = t("problem", s.error);
+    $("alert").classList.remove("hidden");
+  } else $("alert").classList.add("hidden");
+
+  const a = s.audit, done = a.days >= a.target;
+  $("day").textContent = t("days_recorded", { d: Math.min(a.days, a.target), n: a.target });
+  $("hours").textContent = t("hours_recorded", { h: a.hours });
+  $("bar").style.width = `${Math.min(100, (a.days / a.target) * 100)}%`;
+  const left = a.target - a.days;
+  $("audit-note").textContent = !a.days ? t("audit_first")
+    : done ? t("audit_done", { n: a.target, b: a.blocks, c: a.checkins })
+    : t("audit_left", { left, b: a.blocks });
+  if (!reportDaysTouched) {
+    const sel = $("report-days");
+    if ([...sel.options].some(o => +o.value === a.target)) sel.value = String(a.target);
+  }
+
+  const rb = $("report-btn"), r = s.report;
+  rb.className = "btn grow" + (done ? " primary" : "");
+  rb.disabled = r.busy;
+  rb.innerHTML = r.busy ? `<span class="spinner" style="margin-top:0"></span>${t("writing_report")}` : `${icon("file")}${t("write_report")}`;
+  if (r.message) {
+    $("report-msg").classList.remove("hidden");
+    $("report-spin").classList.toggle("hidden", !r.busy);
+    $("report-text").textContent = r.message;
+  } else $("report-msg").classList.add("hidden");
+  $("open-report").classList.toggle("hidden", !s.last_report);
+
+  renderDaily(s.daily);
+  renderPermissions(s.permissions);
+  renderClaude(s.claude);
+
+  const td = s.today;
+  $("t-active").textContent = fmtMin(td.active_min);
+  $("t-frames").textContent = td.frames.toLocaleString(LANG);
+  $("t-blocks").textContent = td.blocks;
+  $("t-checkins").textContent = td.checkins_asked ? t("x_of_y", { a: td.checkins_answered, b: td.checkins_asked }) : t("none_asked");
+  $("t-cost").textContent = `$${td.cost.toFixed(2)}`;
+  $("t-cost-row").classList.toggle("hidden", s.ai === "codex");  // Codex doesn't report a cost
+
+  const latest = $("latest");
+  if (s.last_summary) {
+    latest.textContent = s.last_summary;
+    latest.className = "summary";
+    $("latest-when").textContent = s.last_block_end ? t("up_to", { t: s.last_block_end }) : "";
+  } else {
+    latest.textContent = t(s.state === "stopped" ? "latest_stopped" : "latest_waiting");
+    latest.className = "summary empty";
+    $("latest-when").textContent = "";
+  }
+}
+
+function renderPermissions(p) {
+  const show = !p.screen || (!p.accessibility && !p.dismissed);
+  $("perms").classList.toggle("hidden", !show);
+  if (!show) return;
+  for (const [key, ok] of [["screen", p.screen], ["ax", p.accessibility]]) {
+    $(`perm-${key}-dot`).className = "dot " + (ok ? "ok" : "missing");
+    $(`perm-${key}-state`).textContent = t(ok ? "perm_granted" : "perm_missing");
+    $(`perm-${key}-btn`).classList.toggle("hidden", ok);
+  }
+  // Accessibility is optional, so it can be put away once screenshots work
+  $("perm-hide").classList.toggle("hidden", !p.screen);
+}
+
+async function openPermission(kind) {
+  await api("open_permission", kind);
+  toast(t("toast_settings"));
+}
+
+function renderClaude(c) {
+  // Nothing until the first check has an answer, then only while it's not working
+  const show = c.checking ? c.kind && c.kind !== "ok" : c.kind && !c.ok;
+  $("claude").classList.toggle("hidden", !show);
+  if (!show) return;
+  // Codex has its own wording where it differs; the rest is shared
+  const k = base => (c.ai === "codex" && STRINGS.en["codex_" + base] ? "codex_" : "claude_") + base;
+  $("claude-title").textContent = t(k("title"));
+  $("claude-intro").textContent = t(k("intro"));
+  $("claude-step-install-text").textContent = t(k("step_install"));
+  $("claude-path-hint").textContent = t(k("path_hint"));
+  $("claude-cmd").textContent = c.install;
+  $("claude-step-install").classList.toggle("hidden", c.kind === "login");
+  $("claude-path-hint").classList.toggle("hidden", c.kind !== "missing");
+  const msg = c.kind === "missing" ? "" : c.kind === "login" ? t(k("login")) : t(k("error"), { m: c.message || "" });
+  $("claude-step-login").textContent = t(k(c.kind === "login" ? "step_login_only" : "step_login"));
+  $("claude-msg").textContent = msg;
+  $("claude-msg").className = (c.kind === "error" ? "claude-msg" : "subnote") + (msg ? "" : " hidden");
+  const b = $("claude-btn");
+  b.disabled = !!c.checking;
+  b.innerHTML = c.checking ? `<span class="spinner" style="margin-top:0"></span>${t("claude_checking")}`
+    : `${icon("refresh")}${t("claude_check")}`;
+}
+
+async function checkClaude() { await api("check_claude"); refresh(); }
+async function copyInstall() { await api("copy_text", $("claude-cmd").textContent); toast(t("copied")); }
+
+function fmtBytes(n) {
+  if (n === null || n === undefined) return "–";
+  if (n >= 1e9) return t("gb", { n: (n / 1e9).toFixed(n >= 1e10 ? 0 : 1) });
+  if (n >= 1e6) return t("mb", { n: Math.round(n / 1e6) });
+  return t("kb", { n: Math.max(0, Math.round(n / 1e3)) });
+}
+
+async function renderStorage() {
+  const s = await api("storage");
+  $("st-frames").textContent = fmtBytes(s.frames);
+  $("st-data").textContent = fmtBytes(s.data);
+  $("st-reports").textContent = fmtBytes(s.reports);
+  $("st-free").textContent = fmtBytes(s.free);
+  $("st-free").classList.toggle("warn", s.free !== null && s.free < 10e9);
+  const note = $("st-note");
+  note.textContent = !s.days ? t("st_none")
+    : t("st_days", { d: s.days, first: s.first, last: s.last, k: s.keep_days })
+      + (s.waiting_days ? " " + t("st_waiting", { w: s.waiting_days }) : "");
+  note.className = "subnote" + (s.waiting_days ? " warn" : "");
+}
+
+async function dismissPermissions() { render(await api("dismiss_permissions")); }
+
+function renderDaily(d) {
+  $("daily-when").textContent = d.written ? t("written_at", { t: d.written }) : "";
+  $("daily-note").textContent = d.written ? t("daily_written")
+    : d.wrapup_enabled ? t("daily_auto", { t: d.wrapup_time }) : t("daily_manual");
+  $("daily-msg").classList.toggle("hidden", !(d.busy || d.message));
+  $("daily-spin").classList.toggle("hidden", !d.busy);
+  $("daily-text").textContent = d.busy ? t("daily_busy") : (d.message || "");
+  const b = $("daily-btn");
+  b.disabled = d.busy;
+  b.innerHTML = d.busy ? `<span class="spinner" style="margin-top:0"></span>${t("writing_todays_log")}`
+    : `${icon("file")}${t(d.written ? "write_again" : "write_todays_log")}`;
+  $("daily-open").classList.toggle("hidden", !d.written || d.busy);
+}
+
+async function writeDaily() {
+  const r = await api("write_daily");
+  toast(t({ wrapup: "toast_wrapup", writing: "toast_writing", busy: "toast_busy" }[r]));
+  setTimeout(refresh, 800);
+}
+
+async function refresh() {
+  try { render(await api("status")); } catch (e) { console.error(e); }
+}
+
+async function control(name, arg) {
+  busyControls = true;
+  $("controls").querySelectorAll("button").forEach(b => b.disabled = true);
+  try {
+    const s = await (arg === undefined ? api(name) : api(name, arg));
+    busyControls = false;
+    render(s);
+    toast({ start: t("toast_started"), stop: t("toast_stopped"), resume: t("toast_resumed"),
+            pause: arg === 60 ? t("toast_paused_60") : t("toast_paused_n", { n: arg }) }[name]);
+  } finally { busyControls = false; }
+}
+
+async function act(name, key) { await api(name); toast(t(key)); }
+
+async function writeReport() {
+  await api("write_report", +$("report-days").value);
+  refresh();
+}
+$("report-days").addEventListener("change", () => reportDaysTouched = true);
+
+async function openSettings() {
+  const s = await api("settings");
+  $("s-interval").replaceChildren(...[...new Set([5, 10, 15, 30, s.interval_sec])].sort((x, y) => x - y)
+    .map(n => new Option(t("seconds", { n }), n)));
+  $("s-interval").value = String(s.interval_sec);
+  $("s-language").value = s.language;
+  $("s-ai").value = s.ai;
+  $("s-keep").value = s.keep_frames_days;
+  $("s-startup").checked = s.startup;
+  $("s-checkins").value = s.checkin_per_day;
+  $("s-wrapup").checked = s.wrapup_enabled;
+  $("s-wrapup-time").value = s.wrapup_time;
+  $("s-wrapup-time").disabled = !s.wrapup_enabled;
+  $("s-days").value = s.audit_days;
+  $("s-privacy").value = s.privacy;
+  $("s-path").textContent = t("stored_in", { d: s.data_dir });
+  $("s-frames").value = s.frames_location || "";
+  showPreview(s.frames);
+  ["st-frames", "st-data", "st-reports", "st-free"].forEach(id => $(id).textContent = "–");
+  $("st-note").textContent = t("st_counting");
+  renderStorage();
+  $("s-error").classList.add("hidden");
+  $("main").classList.add("hidden");
+  $("settings").classList.remove("hidden");
+  window.scrollTo(0, 0);
+}
+function closeSettings() {
+  $("settings").classList.add("hidden");
+  $("main").classList.remove("hidden");
+  window.scrollTo(0, 0);
+}
+function showPreview(f) {
+  const p = $("s-frames-preview");
+  if (f.error) { p.textContent = f.error; p.className = "preview warn"; }
+  else {
+    const low = f.free_gb !== null && f.free_gb < 10;
+    p.textContent = t("saved_to", { dir: f.dir }) + (f.free_gb !== null ? t("free_on", { gb: f.free_gb, drive: f.drive || t("startup_disk") }) : "")
+      + (low ? t("low_space") : "");
+    p.className = "preview" + (low ? " warn" : "");
+  }
+  $("s-frames-reset").classList.toggle("hidden", f.default);
+}
+let previewTimer;
+$("s-frames").addEventListener("input", () => {
+  clearTimeout(previewTimer);
+  previewTimer = setTimeout(async () => showPreview(await api("frames_preview", $("s-frames").value)), 250);
+});
+async function chooseFolder() {
+  const picked = await api("choose_folder");
+  if (picked) { $("s-frames").value = picked; showPreview(await api("frames_preview", picked)); }
+}
+async function useDefaultFolder() {
+  $("s-frames").value = "";
+  showPreview(await api("frames_preview", ""));
+}
+async function saveSettings() {
+  const num = (id, lo, hi) => Math.max(lo, Math.min(hi, parseInt($(id).value || lo, 10)));
+  const r = await api("save_settings", {
+    interval_sec: +$("s-interval").value, keep_frames_days: num("s-keep", 1, 60),
+    startup: $("s-startup").checked, checkin_per_day: num("s-checkins", 0, 30),
+    wrapup_enabled: $("s-wrapup").checked, wrapup_time: $("s-wrapup-time").value,
+    audit_days: num("s-days", 1, 60), privacy: $("s-privacy").value,
+    frames_location: $("s-frames").value, language: $("s-language").value, ai: $("s-ai").value,
+  });
+  if (r.error) {
+    $("s-error").textContent = r.error;
+    $("s-error").classList.remove("hidden");
+    return;
+  }
+  applyLang($("s-language").value);
+  closeSettings();
+  toast(t(r.restarted ? "toast_saved_restart" : "toast_saved"));
+  reportDaysTouched = false;
+  refresh();
+}
+
+$("s-wrapup").addEventListener("change", () => $("s-wrapup-time").disabled = !$("s-wrapup").checked);
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("settings").classList.contains("hidden")) closeSettings(); });
+window.addEventListener("pywebviewready", () => { refresh(); setInterval(refresh, 2000); });
+</script>
+</body>
+</html>

@@ -1,0 +1,100 @@
+/* House style kit, copied 2026-10-27 from tools/_design-system. Don't edit here. */
+/* House style: design tokens. Source of truth for colour, type, shape and spacing.
+   Extracted from tools/screen-audit/ui.html (2026-10-16). Rules: DESIGN_RULES.md.
+
+   Theme: follows the OS through prefers-color-scheme. Any element can force a
+   theme with data-theme="light" or data-theme="dark" (put it on <html> for a
+   whole page, or on a subtree, which is how demo.html shows both side by side).
+
+   Colour roles, in short:
+     bg / surface / border / text / muted / faint  grayscale chrome
+     ink / on-ink                                  the single accent (near-black, near-white in dark)
+     ok / warn / danger / idle (+ -soft halos)     status only, never decoration
+     alert-*                                       the one error box                                  */
+
+:root, [data-theme="light"] {
+  /* chrome */
+  --bg: #fbfbfa;            /* page background */
+  --surface: #ffffff;       /* panels, inputs, outline buttons */
+  --border: #e8e7e4;        /* hairlines inside and around panels */
+  --border-strong: #d6d5d1; /* input and button outlines, scrollbar thumb, switch off */
+  --hover: #f3f2ef;         /* hover fill for outline, quiet and icon buttons */
+  --track: #edece9;         /* progress track, spinner track */
+  --skeleton: #efeeeb;      /* loading placeholders */
+
+  /* text */
+  --text: #1b1b1a;          /* body copy, values, headings */
+  --muted: #6e6d69;         /* labels, hints, secondary lines */
+  --faint: #a19f9a;         /* paths, disabled-looking metadata */
+
+  /* the one accent */
+  --ink: #1b1b1a;           /* primary button, progress fill, switch on, toast */
+  --on-ink: #ffffff;        /* text and icons on ink */
+
+  /* status: the only colour in the UI */
+  --danger: #d1453b;  --danger-soft: rgba(209, 69, 59, .14);   /* live/recording, or failed */
+  --warn:   #c48a12;  --warn-soft:   rgba(196, 138, 18, .14);  /* paused, needs attention */
+  --ok:     #2f8a4c;  --ok-soft:     rgba(47, 138, 76, .14);   /* healthy, done, synced */
+  --idle:   #a19f9a;                                           /* stopped, unknown */
+
+  /* the error box */
+  --alert-bg: #fdf3f2; --alert-border: #f3d6d3; --alert-text: #9c2f27;
+
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #16171a; --surface: #1c1d21; --border: #2a2b30; --border-strong: #393a40;
+    --hover: #232429; --track: #2a2b30; --skeleton: #24252a;
+    --text: #ececea; --muted: #9b9a96; --faint: #67666a;
+    --ink: #ececea; --on-ink: #16171a;
+    --danger: #ef6b61; --danger-soft: rgba(239, 107, 97, .16);
+    --warn:   #e2ab3f; --warn-soft:   rgba(226, 171, 63, .16);
+    --ok:     #5cc27f; --ok-soft:     rgba(92, 194, 127, .16);
+    --idle:   #67666a;
+    --alert-bg: #2a1c1b; --alert-border: #4a2b29; --alert-text: #f3a49c;
+    color-scheme: dark;
+  }
+}
+
+[data-theme="dark"] {
+  --bg: #16171a; --surface: #1c1d21; --border: #2a2b30; --border-strong: #393a40;
+  --hover: #232429; --track: #2a2b30; --skeleton: #24252a;
+  --text: #ececea; --muted: #9b9a96; --faint: #67666a;
+  --ink: #ececea; --on-ink: #16171a;
+  --danger: #ef6b61; --danger-soft: rgba(239, 107, 97, .16);
+  --warn:   #e2ab3f; --warn-soft:   rgba(226, 171, 63, .16);
+  --ok:     #5cc27f; --ok-soft:     rgba(92, 194, 127, .16);
+  --idle:   #67666a;
+  --alert-bg: #2a1c1b; --alert-border: #4a2b29; --alert-text: #f3a49c;
+  color-scheme: dark;
+}
+
+:root {
+  /* type: four sizes, nothing else */
+  --font: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-display: "Segoe UI Variable Display", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-mono: "Cascadia Mono", Consolas, ui-monospace, monospace;  /* logs and code only, at 12 px */
+  --fs-small: 12px;   /* section labels, hints, paths */
+  --fs-body: 13px;    /* everything else */
+  --fs-lead: 15px;    /* the one number or line that matters inside a panel */
+  --fs-title: 22px;   /* the screen's headline (status, or page name) */
+  --lh: 1.5;
+  --lh-title: 1.25;
+
+  /* shape */
+  --r-sm: 6px;        /* skeleton bars */
+  --r: 8px;           /* buttons, inputs, alerts, toast */
+  --r-panel: 10px;    /* panels */
+
+  /* spacing: steps of 4 */
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 20px; --s6: 24px;
+
+  /* sizes */
+  --h-control: 36px;  /* buttons, inputs, selects */
+  --h-primary: 40px;  /* the one solid button */
+  --h-icon: 32px;     /* icon-only buttons */
+  --icon: 16px;       /* every icon */
+  --icon-stroke: 1.75;
+}

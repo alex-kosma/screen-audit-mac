@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en" class="i18n-pending">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Screen Audit wrap-up</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="components.css">
+<style>
+.i18n-pending body { opacity: 0; }
+/* Layout only. Everything else is the kit. See DESIGN_RULES.md. */
+html, body { height: 100%; overflow: hidden; }
+.view { height: 100%; gap: var(--s4); }
+.ask { display: flex; flex-direction: column; gap: var(--s1); }
+.ask .lead { line-height: 1.4; }
+.q { display: flex; flex-direction: column; gap: var(--s1); }
+.q.grow { flex: 1; }
+.q.grow textarea { flex: 1; }
+textarea { resize: none; user-select: text; min-height: 58px; }
+.earlier { margin: 0; }
+.actions { display: flex; align-items: center; gap: var(--s2); }
+.actions .push { margin-left: auto; }
+</style>
+</head>
+<body class="desktop">
+<script src="icons.js"></script>
+<script src="i18n.js"></script>
+
+<main class="view">
+  <div class="label"><span class="status"><span class="dot sm warn"></span><span data-i18n="end_of_day">End of day</span></span><span data-i18n="esc_not_today">Esc for not today</span></div>
+
+  <div class="ask">
+    <div class="lead" data-i18n="wrap_up_day">Wrap up the day</div>
+    <p id="stats" class="sub"><span class="sk" style="width:70%;height:12px;display:inline-block"></span></p>
+  </div>
+
+  <div class="q grow">
+    <label class="label" for="done"><span data-i18n="q_done">What did you finish that the screen wouldn't show?</span></label>
+    <textarea id="done" placeholder="Calls, decisions, things sent, things you thought through" data-i18n-ph="q_done_ph" spellcheck="true" disabled></textarea>
+  </div>
+
+  <div class="q">
+    <label class="label" for="blockers"><span data-i18n="q_blockers">What blocked you or slowed you down?</span></label>
+    <textarea id="blockers" placeholder="Leave empty if nothing did" data-i18n-ph="q_blockers_ph" spellcheck="true" disabled></textarea>
+    <p id="earlier" class="hint earlier hidden"></p>
+  </div>
+
+  <div class="q">
+    <label class="label" for="tomorrow"><span data-i18n="q_tomorrow">What's the first thing tomorrow?</span></label>
+    <textarea id="tomorrow" placeholder="One concrete step" data-i18n-ph="q_tomorrow_ph" spellcheck="true" disabled></textarea>
+  </div>
+
+  <div class="actions">
+    <button id="save" class="btn primary" disabled onclick="finish('answered')"><svg class="i"><use href="#i-file-text"/></svg><span data-i18n="write_todays_log">Write today's log</span></button>
+    <button class="btn quiet push" onclick="finish('dismissed')" data-i18n="not_today">Not today</button>
+  </div>
+</main>
+
+<div id="toast" class="toast"><svg class="i"><use href="#i-check"/></svg><span id="toast-text"></span></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const api = (name, ...args) => window.pywebview.api[name](...args);
+const FIELDS = ["done", "blockers", "tomorrow"];
+let done = false, timer;
+
+function toast(text) {
+  $("toast-text").textContent = text;
+  $("toast").classList.add("show");
+}
+
+async function finish(result) {
+  if (done) return;
+  done = true;
+  clearTimeout(timer);
+  const answers = Object.fromEntries(FIELDS.map(f => [f, $(f).value]));
+  FIELDS.forEach(f => $(f).disabled = true);
+  document.querySelectorAll("button").forEach(b => b.disabled = true);
+  if (result !== "dismissed") toast(t("toast_writing"));
+  await api("finish", result, answers);
+}
+
+const typed = () => FIELDS.some(f => $(f).value.trim());
+FIELDS.forEach(f => $(f).addEventListener("input", () => clearTimeout(timer)));
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") finish("dismissed");
+  else if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) finish("answered");
+});
+
+function show(info) {
+  applyLang(info.lang);
+  $("stats").textContent = t("wrap_active", { t: fmtMin(info.active_min) }) +
+    (info.checkins ? t("wrap_checkins", { n: info.checkins }) : "") + t("wrap_optional");
+  if (info.blockers.length) {
+    $("earlier").textContent = t("noted_earlier") + info.blockers.join(" · ");
+    $("earlier").classList.remove("hidden");
+  }
+  FIELDS.forEach(f => $(f).disabled = false);
+  $("save").disabled = false;
+  $("done").focus();
+  // untouched: still write the log from the screen data, so auto mode never skips a day
+  timer = setTimeout(() => { if (!typed()) finish("timeout"); }, info.timeout_min * 60000);
+}
+
+window.addEventListener("pywebviewready", () => api("info").then(show));
+</script>
+</body>
+</html>

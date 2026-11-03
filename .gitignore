@@ -1,0 +1,10 @@
+# Personal: recordings, logs, reports, settings. Never commit these.
+data/
+reports/
+config.json
+context.md
+*.lock
+__pycache__/
+.claude/
+.DS_Store
+.venv/

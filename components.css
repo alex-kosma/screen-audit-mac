@@ -1,0 +1,231 @@
+/* House style kit, copied 2026-10-27 from tools/_design-system. Don't edit here. */
+/* House style: components. Needs tokens.css loaded first.
+   Generalised from tools/screen-audit/ui.html (2026-10-16). See demo.html for every piece.
+
+   Contents: base · layout · icons · headline + status dot · buttons · sections and panels · menu rows ·
+   list rows · settings fields · switch · inputs · slider · colour swatch · log · progress · alert · toast ·
+   skeleton · spinner */
+
+/* ---------------------------------------------------------------- base */
+* { box-sizing: border-box; margin: 0; }
+html, body { min-height: 100%; }
+body {
+  background: var(--bg); color: var(--text);
+  font: var(--fs-body)/var(--lh) var(--font);
+  -webkit-font-smoothing: antialiased;
+}
+/* Desktop windows (webview-shell) add class="desktop" to <body>: no text selection
+   except where marked .selectable, inputs, and textareas. Web pages leave it off. */
+body.desktop { user-select: none; }
+body.desktop .selectable, body.desktop input, body.desktop textarea { user-select: text; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+.hidden { display: none !important; }
+.muted { color: var(--muted); }
+.num { font-variant-numeric: tabular-nums; }
+
+/* ---------------------------------------------------------------- layout */
+/* One screen = one .view. Vertical rhythm is 20 between blocks. */
+.view { padding: var(--s5) var(--s6); display: flex; flex-direction: column; gap: var(--s5); }
+.row { display: flex; gap: var(--s2); align-items: center; }
+.row > .grow { flex: 1; }
+.stack { display: flex; flex-direction: column; gap: var(--s2); }
+.top { display: flex; align-items: center; justify-content: space-between; height: 32px; }
+/* A footer row of quiet buttons; the negative margin lines the text up with the content edge. */
+.tools { display: flex; justify-content: space-between; flex-wrap: wrap; margin: calc(-1 * var(--s2)) -10px 0; }
+/* Sticky save bar at the bottom of a settings screen. */
+.save-bar { position: sticky; bottom: 0; background: var(--bg); padding: var(--s3) 0 var(--s1); margin-bottom: calc(-1 * var(--s1)); z-index: 1; }
+
+/* ---------------------------------------------------------------- icons */
+/* Lucide symbols from icons.svg: <svg class="i"><use href="#i-plus"/></svg> */
+svg.i { width: var(--icon); height: var(--icon); flex: none; stroke: currentColor; fill: none;
+        stroke-width: var(--icon-stroke); stroke-linecap: round; stroke-linejoin: round; }
+
+/* ---------------------------------------------------------------- headline + status */
+h1, .title { font: 600 var(--fs-title)/var(--lh-title) var(--font-display); letter-spacing: -.01em; }
+.sub { color: var(--muted); margin-top: var(--s1); }
+.hero { display: flex; flex-direction: column; gap: var(--s4); }
+.state { display: flex; align-items: center; gap: 10px; }
+/* Status dot: grey by default. .live pulses (recording, running); the rest sit still. */
+.dot { width: 10px; height: 10px; border-radius: 50%; background: var(--idle); flex: none; }
+.dot.live   { background: var(--danger); box-shadow: 0 0 0 4px var(--danger-soft); animation: dot-pulse 2s ease-in-out infinite; }
+.dot.danger { background: var(--danger); box-shadow: 0 0 0 4px var(--danger-soft); }
+.dot.warn   { background: var(--warn);   box-shadow: 0 0 0 4px var(--warn-soft); }
+.dot.ok     { background: var(--ok);     box-shadow: 0 0 0 4px var(--ok-soft); }
+.dot.sm { width: 8px; height: 8px; box-shadow: none; }
+@keyframes dot-pulse { 50% { box-shadow: 0 0 0 7px var(--danger-soft); } }
+/* Status as text (inside a list row or a sentence). Colour on the dot, never on the words. */
+.status { display: inline-flex; align-items: center; gap: var(--s2); }
+
+/* ---------------------------------------------------------------- buttons */
+/* Outline is the default. One .primary per screen state. .quiet for everything secondary. */
+.btn { height: var(--h-control); padding: 0 14px; border-radius: var(--r); border: 1px solid var(--border-strong);
+       background: var(--surface); color: var(--text); font: inherit; font-weight: 500;
+       display: inline-flex; align-items: center; justify-content: center; gap: var(--s2); cursor: pointer;
+       white-space: nowrap; text-decoration: none; }
+.btn:hover { background: var(--hover); }
+.btn:disabled { opacity: .5; cursor: default; }
+.btn:disabled:hover { background: var(--surface); }
+.btn.primary { height: var(--h-primary); background: var(--ink); color: var(--on-ink); border-color: var(--ink); }
+.btn.primary:hover { opacity: .9; background: var(--ink); }
+.btn.quiet { border-color: transparent; background: transparent; color: var(--muted); padding: 0 10px; }
+.btn.quiet:hover { background: var(--hover); color: var(--text); }
+.btn.quiet.flush { margin-left: -10px; align-self: flex-start; } /* text lines up with the content edge */
+.btn.small { height: 28px; padding: 0 10px; }
+.btn.block { width: 100%; }
+.icon-btn { width: var(--h-icon); height: var(--h-icon); display: grid; place-items: center; border: 0; border-radius: var(--r);
+            background: transparent; color: var(--muted); cursor: pointer; flex: none; }
+.icon-btn:hover { background: var(--hover); color: var(--text); }
+.btn:focus-visible, .icon-btn:focus-visible, .switch input:focus-visible + span {
+  outline: 2px solid var(--text); outline-offset: 2px; }
+
+/* ---------------------------------------------------------------- sections and panels */
+/* <section><div class="label"><span>Today</span><span>optional right-hand note</span></div><div class="panel">… */
+section { display: flex; flex-direction: column; gap: 10px; }
+.label { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s3);
+         font-size: var(--fs-small); font-weight: 600; color: var(--muted); }
+.label span:last-child:not(:first-child) { font-weight: 400; }
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-panel); }
+.panel.pad { padding: var(--s4); display: flex; flex-direction: column; gap: var(--s3); }
+.note { color: var(--muted); }
+.lead { font-size: var(--fs-lead); font-weight: 600; }
+/* Free text inside a panel (a summary, a message). .clamp cuts it at 5 lines. */
+.prose { padding: 14px var(--s4); }
+.prose.clamp { display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
+.prose.empty, .empty-state { color: var(--muted); }
+/* Designed empty state: icon, one sentence, at most one action. */
+.empty-state { padding: var(--s6) var(--s4); display: flex; flex-direction: column; align-items: center; gap: var(--s2);
+               text-align: center; }
+.empty-state svg.i { width: 20px; height: 20px; color: var(--faint); }
+
+/* ---------------------------------------------------------------- progress */
+.progress-head { display: flex; justify-content: space-between; align-items: baseline; }
+.progress-head b { font-size: var(--fs-lead); font-weight: 600; }
+.progress-head span { color: var(--muted); }
+.bar { height: 4px; background: var(--track); border-radius: 4px; overflow: hidden; }
+.bar > div { height: 100%; background: var(--ink); border-radius: 4px; transition: width .4s ease; }
+
+/* ---------------------------------------------------------------- list rows */
+/* <dl class="panel list"><div><dt>Label</dt><dd>Value</dd></div>…</dl> */
+.list { padding: var(--s1) var(--s4); }
+.list > div { display: flex; justify-content: space-between; align-items: center; gap: var(--s4);
+              padding: 9px 0; border-bottom: 1px solid var(--border); min-height: 40px; }
+.list > div:last-child { border-bottom: 0; }
+.list dt { color: var(--muted); }
+.list dd { font-variant-numeric: tabular-nums; font-weight: 500; margin: 0; text-align: right; }
+/* Clickable rows (a menu of sub-screens):
+   <div class="panel list"><div class="row-link" tabindex="0"><span>Colours</span>
+     <span class="end">summary<svg class="i"><use href="#i-chevron-right"/></svg></span></div>… */
+.list > .row-link { cursor: pointer; margin: 0 calc(-1 * var(--s4)); padding: 9px var(--s4); color: inherit; text-decoration: none; }
+.list > .row-link:hover { background: var(--hover); }
+.list > .row-link:first-child { border-radius: var(--r-panel) var(--r-panel) 0 0; margin-top: calc(-1 * var(--s1)); padding-top: 13px; }
+.list > .row-link:last-child { border-radius: 0 0 var(--r-panel) var(--r-panel); margin-bottom: calc(-1 * var(--s1)); padding-bottom: 13px; }
+.list > .row-link:focus-visible { outline: 2px solid var(--text); outline-offset: -2px; }
+.row-link .end { display: flex; align-items: center; gap: var(--s2); color: var(--muted); }
+.row-link .end svg.i { color: var(--faint); }
+
+/* ---------------------------------------------------------------- settings fields */
+/* <div class="panel"><div class="field"><div>Name<div class="hint">Why</div></div><control/></div>… */
+.field { display: flex; justify-content: space-between; align-items: center; gap: var(--s4); padding: var(--s3) var(--s4);
+         border-bottom: 1px solid var(--border); }
+.field:last-child { border-bottom: 0; }
+/* The control keeps its own width; long help text wraps instead of squeezing a select to "openrg". */
+.field:not(.stack) > :first-child { flex: 1; min-width: 0; }
+.field:not(.stack) > :last-child:not(:first-child) { flex: none; }
+.field.stack { flex-direction: column; align-items: stretch; gap: var(--s2); }
+.field input[type=number] { width: 72px; text-align: right; }
+.hint { color: var(--muted); font-size: var(--fs-small); }
+.hint.warn { color: var(--warn); }
+.path { color: var(--faint); font-size: var(--fs-small); word-break: break-all; }
+
+/* ---------------------------------------------------------------- switch */
+/* <label class="switch"><input type="checkbox"><span></span></label> */
+.switch { position: relative; width: 36px; height: 20px; flex: none; }
+.switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+.switch span { position: absolute; inset: 0; background: var(--border-strong); border-radius: 20px; cursor: pointer;
+               transition: background .15s; }
+.switch span::after { content: ""; position: absolute; width: 16px; height: 16px; left: 2px; top: 2px;
+                      border-radius: 50%; background: var(--surface); transition: transform .15s; }
+.switch input:checked + span { background: var(--ink); }
+.switch input:checked + span::after { transform: translateX(16px); background: var(--on-ink); }
+.switch input:disabled + span { opacity: .5; cursor: default; }
+
+/* ---------------------------------------------------------------- inputs */
+select, input[type=number], input[type=text], input[type=search], input[type=email], input[type=url],
+input[type=password], input[type=date], input[type=time], textarea {
+  font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--border-strong);
+  border-radius: var(--r); height: var(--h-control); padding: 0 10px; outline: none; min-width: 0; }
+input[type=text], input[type=search], input[type=email], input[type=url], input[type=password] { width: 100%; }
+select:focus, input:focus, textarea:focus { border-color: var(--text); }
+input::placeholder, textarea::placeholder { color: var(--faint); }
+textarea { height: auto; padding: var(--s2) 10px; resize: vertical; width: 100%; line-height: var(--lh); }
+/* Search: an input with a leading icon. <div class="search"><svg class="i">…</svg><input type="search"></div> */
+.search { position: relative; }
+.search svg.i { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+.search input { padding-left: 34px; }
+/* Slider with its value: <div class="range"><input type="range"><output>40</output></div>.
+   The ink fill left of the thumb needs --fill (0-100%), set by syncRange() in webview-shell/ui.html. */
+.range { display: flex; align-items: center; gap: 10px; }
+.range output { min-width: 44px; text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
+input[type=range] { -webkit-appearance: none; appearance: none; width: 168px; height: 20px; margin: 0;
+                    background: transparent; cursor: pointer; }
+input[type=range]::-webkit-slider-runnable-track {
+  height: 4px; border-radius: 4px;
+  background: linear-gradient(to right, var(--ink) 0 var(--fill, 0%), var(--track) var(--fill, 0%) 100%); }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; margin-top: -6px;
+  border-radius: 50%; background: var(--surface); border: 1px solid var(--border-strong); }
+input[type=range]:hover::-webkit-slider-thumb { border-color: var(--text); }
+input[type=range]:focus-visible { outline: none; }
+input[type=range]:focus-visible::-webkit-slider-thumb { outline: 2px solid var(--text); outline-offset: 2px; }
+/* Colour picker shown as a swatch button: <label class="swatch"><input type="color"><span>#00ff00</span></label>.
+   The colour is the user's content (an LED colour, a label colour), not UI chrome. */
+.swatch { height: var(--h-control); padding: 0 12px 0 8px; border-radius: var(--r); border: 1px solid var(--border-strong);
+          background: var(--surface); display: inline-flex; align-items: center; gap: var(--s2); cursor: pointer;
+          font-family: var(--font-mono); font-size: var(--fs-small); color: var(--muted); }
+.swatch:hover { background: var(--hover); }
+.swatch input[type=color] { width: 20px; height: 20px; padding: 0; border: 0; background: none; cursor: pointer; }
+.swatch input[type=color]::-webkit-color-swatch-wrapper { padding: 0; }
+.swatch input[type=color]::-webkit-color-swatch { border: 1px solid var(--border-strong); border-radius: 4px; }
+/* Read-only log or command output. */
+.log { font: var(--fs-small)/1.5 var(--font-mono); color: var(--muted); background: var(--bg); border: 1px solid var(--border);
+       border-radius: var(--r); padding: 10px var(--s3); max-height: 240px; overflow: auto; white-space: pre; user-select: text; }
+/* Inline form error under a form: same palette as .alert, no icon. */
+.form-error { color: var(--alert-text); background: var(--alert-bg); border: 1px solid var(--alert-border);
+              border-radius: var(--r); padding: 10px var(--s3); }
+
+/* ---------------------------------------------------------------- alert */
+/* One per screen, under the headline. <div class="alert"><svg class="i"><use href="#i-alert"/></svg><div>…</div></div> */
+.alert { display: flex; gap: 10px; padding: 10px var(--s3); border-radius: var(--r); background: var(--alert-bg);
+         border: 1px solid var(--alert-border); color: var(--alert-text); }
+.alert svg.i { margin-top: 2px; }
+.alert .grow { flex: 1; }
+
+/* ---------------------------------------------------------------- toast */
+/* <div id="toast" class="toast"><svg class="i"><use href="#i-check"/></svg><span></span></div> + toast() in webview-shell/ui.html */
+.toast { position: fixed; left: 50%; bottom: var(--s5); transform: translate(-50%, 8px); opacity: 0;
+         background: var(--ink); color: var(--on-ink); padding: var(--s2) 14px; border-radius: var(--r); font-weight: 500;
+         transition: opacity .15s, transform .15s; pointer-events: none; display: flex; gap: var(--s2); align-items: center;
+         max-width: calc(100% - 32px); z-index: 10; }
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* ---------------------------------------------------------------- skeleton */
+/* Shown until the first data arrives. Size it like the thing it stands in for. */
+.sk { background: var(--skeleton); border-radius: var(--r-sm); animation: sk 1.4s ease-in-out infinite; }
+span.sk { display: inline-block; vertical-align: middle; }
+@keyframes sk { 50% { opacity: .55; } }
+
+/* ---------------------------------------------------------------- spinner */
+/* Inside a button: <button class="btn" disabled><span class="spinner"></span>Writing report</button> */
+.spinner { width: 14px; height: 14px; border: 2px solid var(--track); border-top-color: var(--text);
+           border-radius: 50%; animation: spin .8s linear infinite; flex: none; display: inline-block; }
+.btn.primary .spinner { border-color: color-mix(in srgb, var(--on-ink) 30%, transparent); border-top-color: var(--on-ink); }
+/* A spinner with a sentence beside it, for work that takes a while. */
+.busy { display: flex; gap: var(--s2); align-items: flex-start; color: var(--muted); }
+.busy .spinner { margin-top: 3px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .dot.live, .sk, .spinner { animation-duration: 3s; }
+  .toast, .bar > div, .switch span, .switch span::after { transition: none; }
+}
