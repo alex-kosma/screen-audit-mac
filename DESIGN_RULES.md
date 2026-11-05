@@ -25,6 +25,10 @@ The window answers one question: is the audit running, and how far along is it?
   spinner and a sentence while it runs. Empty summaries explain when the
   first one will arrive. Errors from the last hour show as one red alert
   under the status.
+- **History page:** the same frame as Settings (Back, title, panels). Two
+  tabs in a quiet segmented control, Summaries and Logs and reports. Blocks and
+  documents are read as text only; files are shown by a small Markdown reader
+  that never writes HTML. Words: History, Browse, Open file.
 - **Theme:** follows the Mac's light/dark appearance through
   `prefers-color-scheme`; the native title bar follows it on its own.
 - **App icon:** the character from `make_icon.py`: white round body, dot

@@ -10,6 +10,7 @@ import argparse
 import datetime as dt
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -314,6 +315,53 @@ class Api:
         last = sa.get_status(self._cfg)["last_report"]
         if last:
             macos.open_path(last)
+
+    # ------------------------------------------------------------ history
+
+    def history(self):
+        """Days that have 15-minute summaries (newest first) and the written
+        logs and reports (newest first), for the History page."""
+        days = []
+        for f in sorted((self._cfg["data_dir"] / "analysis").glob("*.jsonl"), reverse=True):
+            blocks = [b for b in sa.read_jsonl(f) if b.get("summary")]
+            if blocks:
+                days.append({"day": f.stem, "blocks": len(blocks),
+                             "active_min": round(sum(b.get("active_min") or 0 for b in blocks))})
+        docs = []
+        root = HERE / "reports"
+        for sub, kind in (("daily", "daily"), (".", "report")):
+            for f in sorted((root / sub).glob("*.md"), reverse=True):
+                docs.append({"kind": kind, "key": f.relative_to(root).as_posix(),
+                             "title": f.stem.replace("report-", ""),
+                             "written": dt.datetime.fromtimestamp(f.stat().st_mtime).strftime("%Y-%m-%d %H:%M")})
+        return {"days": days, "docs": docs}
+
+    def history_day(self, day):
+        """One day's blocks, oldest first."""
+        f = self._cfg["data_dir"] / "analysis" / f"{day}.jsonl"
+        if f.stem != day or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", day):
+            return []
+        return [{"start": b["start"][11:16], "end": b["end"][11:16], "active_min": round(b.get("active_min") or 0),
+                 "summary": b["summary"], "question": b.get("question") or "",
+                 "activities": [{"text": a.get("activity", ""), "minutes": round(a.get("minutes") or 0),
+                                 "category": a.get("category", ""), "process": a.get("process", ""),
+                                 "tools": a.get("tools") or []} for a in b.get("activities") or []]}
+                for b in sa.read_jsonl(f) if b.get("summary")]
+
+    def _doc_path(self, key):
+        """A report file inside reports/, nothing else."""
+        root = (HERE / "reports").resolve()
+        p = (root / str(key)).resolve()
+        return p if p.suffix == ".md" and p.is_relative_to(root) and p.is_file() else None
+
+    def read_doc(self, key):
+        p = self._doc_path(key)
+        return {"text": p.read_text(encoding="utf-8")} if p else {"text": None}
+
+    def open_doc(self, key):
+        p = self._doc_path(key)
+        if p:
+            macos.open_path(p)
 
     def write_report(self, days):
         if self._report["busy"]:
