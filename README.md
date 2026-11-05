@@ -10,6 +10,14 @@ how.
 Everything stays on your Mac, apart from what goes to your own Claude or
 ChatGPT account to write the summaries.
 
+<p align="center">
+  <img src="docs/main.png" width="31%" alt="The main window while recording: audit progress, today's numbers and the latest summary">
+  <img src="docs/history.png" width="31%" alt="History: each day's 15-minute summaries">
+  <img src="docs/report.png" width="31%" alt="A daily log read inside the app">
+</p>
+
+<sub>The window, the History page and a daily log. The pictures use made-up sample data.</sub>
+
 ## Install
 
 Tell your AI assistant (Claude Code or Codex):
@@ -193,6 +201,11 @@ cleaned up once summarised.
   project, where the time went, blockers, open loops, and tomorrow. Writing
   it again replaces it with everything up to now. The same happens on its own
   at the wrap-up time.
+- **History** (clock icon, top right, or *Browse* under the latest summary):
+  *Summaries* steps through the days, newest first, and lists each day's
+  15-minute blocks with what was done and the follow-up question. *Logs and
+  reports* lists every daily log and report, opens one to read in the window,
+  and *Open file* opens it in your editor. Esc goes back.
 - **Check in now / Summarise now / Open folder** (the `data` folder).
 - **Storage** (in Settings): how much space screenshots, logs and summaries,
   and reports take, the free space on that disk, how many days of

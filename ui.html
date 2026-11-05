@@ -177,6 +177,42 @@ input[type=text] { width: 100%; min-width: 0; user-select: text; }
 /* pinned save */
 .save-bar { position: sticky; bottom: 0; background: var(--bg); padding: 12px 0 4px; margin-bottom: -4px; z-index: 1; }
 
+/* history */
+.seg { display: flex; gap: 4px; padding: 3px; background: var(--track); border-radius: 10px; }
+.seg button { flex: 1; height: 30px; border: 0; border-radius: 8px; background: transparent; color: var(--muted);
+              font: inherit; font-weight: 500; cursor: pointer; }
+.seg button.on { background: var(--surface); color: var(--text); box-shadow: 0 0 0 1px var(--border); }
+.daynav { display: flex; align-items: center; justify-content: space-between; }
+.daynav b { font-size: 15px; font-weight: 600; }
+.daynav .sub { margin: 0; text-align: center; }
+.icon-btn:disabled { opacity: .35; cursor: default; background: transparent; }
+.hblock { padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
+.hblock .when { display: flex; justify-content: space-between; font-size: 12px; font-weight: 600; color: var(--muted); }
+.hblock .when span:last-child { font-weight: 400; }
+.hblock p { user-select: text; }
+.acts { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px;
+        border-top: 1px solid var(--border); padding-top: 8px; }
+.acts li { display: flex; justify-content: space-between; gap: 12px; user-select: text; }
+.acts li span:last-child { color: var(--muted); font-size: 12px; white-space: nowrap; }
+.docs > button { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 11px 16px;
+                 border: 0; border-bottom: 1px solid var(--border); background: transparent; color: var(--text);
+                 font: inherit; text-align: left; cursor: pointer; gap: 12px; }
+.docs > button:last-child { border-bottom: 0; }
+.docs > button:hover { background: var(--hover); }
+.docs small { color: var(--muted); font-size: 12px; }
+.md { padding: 16px; user-select: text; display: flex; flex-direction: column; gap: 10px; overflow-wrap: anywhere; }
+.md h2 { font-size: 15px; font-weight: 600; margin-top: 8px; }
+.md h3, .md h4 { font-size: 13px; font-weight: 600; margin-top: 4px; }
+.md ul, .md ol { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; }
+.md code { font: 12px/1.5 ui-monospace, Menlo, monospace; background: var(--bg); border: 1px solid var(--border);
+           border-radius: 6px; padding: 0 4px; }
+.md hr { border: 0; border-top: 1px solid var(--border); width: 100%; }
+.md blockquote { border-left: 2px solid var(--border-strong); padding-left: 12px; color: var(--muted); }
+.md .tbl { overflow-x: auto; }
+.md table { border-collapse: collapse; font-size: 12px; }
+.md th, .md td { text-align: left; vertical-align: top; padding: 6px 10px; border-bottom: 1px solid var(--border); min-width: 64px; }
+.md th { color: var(--muted); font-weight: 600; white-space: nowrap; }
+
 /* toast */
 .toast { position: fixed; left: 50%; bottom: 20px; transform: translate(-50%, 8px); opacity: 0;
          background: var(--ink); color: var(--on-ink); padding: 8px 14px; border-radius: 8px; font-weight: 500;
@@ -202,6 +238,9 @@ input[type=text] { width: 100%; min-width: 0; user-select: text; }
   <symbol id="i-back" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></symbol>
   <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-history" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></symbol>
+  <symbol id="i-left" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+  <symbol id="i-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
   <symbol id="i-shield" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></symbol>
   <symbol id="i-external" viewBox="0 0 24 24"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></symbol>
 </svg>
@@ -210,6 +249,7 @@ input[type=text] { width: 100%; min-width: 0; user-select: text; }
 <main id="main" class="view">
   <div class="hero">
     <div style="position:relative">
+      <button class="icon-btn" title="History" data-i18n-title="history" style="position:absolute;right:28px;top:-2px" onclick="openHistory()"><svg class="i"><use href="#i-history"/></svg></button>
       <button class="icon-btn" title="Settings" data-i18n-title="settings" style="position:absolute;right:-8px;top:-2px" onclick="openSettings()"><svg class="i"><use href="#i-settings"/></svg></button>
       <div class="state"><span id="dot" class="dot"></span><h1 id="state"><span class="sk" style="display:inline-block;width:160px;height:24px"></span></h1></div>
       <p id="sub" class="sub"><span class="sk" style="display:inline-block;width:240px;height:12px"></span></p>
@@ -298,6 +338,7 @@ input[type=text] { width: 100%; min-width: 0; user-select: text; }
   <section>
     <div class="label"><span data-i18n="latest_summary">Latest summary</span><span id="latest-when"></span></div>
     <div class="panel"><p id="latest" class="summary empty">&nbsp;</p></div>
+    <button class="btn quiet" style="align-self:flex-start;margin:-4px 0 0 -10px" onclick="openHistory()"><svg class="i"><use href="#i-history"/></svg><span data-i18n="browse">Browse</span></button>
   </section>
 
   <div class="tools">
@@ -393,6 +434,38 @@ input[type=text] { width: 100%; min-width: 0; user-select: text; }
   <div class="row save-bar">
     <button class="btn primary grow" onclick="saveSettings()"><svg class="i"><use href="#i-check"/></svg><span data-i18n="save_changes">Save changes</span></button>
   </div>
+</main>
+
+<!-- ============================== history -->
+<main id="history" class="view hidden">
+  <div class="top">
+    <button class="btn quiet" style="margin-left:-10px" onclick="historyBack()"><svg class="i"><use href="#i-back"/></svg><span data-i18n="back">Back</span></button>
+    <button id="h-open" class="btn quiet hidden" style="margin-right:-10px" onclick="api('open_doc', docKey)"><svg class="i"><use href="#i-file"/></svg><span data-i18n="open_file">Open file</span></button>
+  </div>
+  <h1 id="h-title" data-i18n="history">History</h1>
+
+  <div id="h-list" class="view-part" style="display:flex;flex-direction:column;gap:20px">
+    <div class="seg">
+      <button id="tab-s" onclick="setTab('s')" data-i18n="tab_summaries">Summaries</button>
+      <button id="tab-d" onclick="setTab('d')" data-i18n="tab_documents">Logs and reports</button>
+    </div>
+    <section id="h-summaries">
+      <div class="daynav">
+        <button id="d-prev" class="icon-btn" data-i18n-title="prev_day" onclick="stepDay(1)"><svg class="i"><use href="#i-left"/></svg></button>
+        <div><b id="d-label"></b><p id="d-sub" class="sub"></p></div>
+        <button id="d-next" class="icon-btn" data-i18n-title="next_day" onclick="stepDay(-1)"><svg class="i"><use href="#i-right"/></svg></button>
+      </div>
+      <div id="d-blocks" style="display:flex;flex-direction:column;gap:10px"></div>
+    </section>
+    <section id="h-documents" class="hidden">
+      <div class="label"><span data-i18n="kind_daily">Daily log</span></div>
+      <div id="docs-daily" class="panel docs"></div>
+      <div class="label" style="margin-top:10px"><span data-i18n="kind_report">Report</span></div>
+      <div id="docs-report" class="panel docs"></div>
+    </section>
+  </div>
+
+  <div id="h-doc" class="panel md hidden"></div>
 </main>
 
 <div id="toast" class="toast"><svg class="i"><use href="#i-check"/></svg><span id="toast-text"></span></div>
@@ -685,8 +758,181 @@ async function saveSettings() {
   refresh();
 }
 
+/* ---------------------------------------------------------- history */
+let hist = null, histTab = "s", dayIdx = 0, docKey = null;
+
+function el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text !== undefined) e.textContent = text;
+  return e;
+}
+
+async function openHistory() {
+  $("main").classList.add("hidden");
+  $("settings").classList.add("hidden");
+  $("history").classList.remove("hidden");
+  window.scrollTo(0, 0);
+  hist = await api("history");
+  dayIdx = 0;
+  closeDoc();
+  renderHistory();
+}
+
+function historyBack() {
+  if (docKey) { closeDoc(); return; }
+  $("history").classList.add("hidden");
+  $("main").classList.remove("hidden");
+  window.scrollTo(0, 0);
+}
+
+function setTab(tab) { histTab = tab; renderHistory(); }
+function stepDay(by) { dayIdx = Math.max(0, Math.min(hist.days.length - 1, dayIdx + by)); renderHistory(); }
+
+function dayLabel(day) {
+  const d = new Date(day + "T12:00:00");
+  return d.toLocaleDateString(LANG, { weekday: "long", day: "numeric", month: "long" });
+}
+
+async function renderHistory() {
+  $("tab-s").classList.toggle("on", histTab === "s");
+  $("tab-d").classList.toggle("on", histTab === "d");
+  $("h-summaries").classList.toggle("hidden", histTab !== "s");
+  $("h-documents").classList.toggle("hidden", histTab !== "d");
+  if (histTab === "s") await renderDay(); else renderDocs();
+}
+
+async function renderDay() {
+  const box = $("d-blocks"), days = hist.days;
+  $("d-prev").disabled = dayIdx >= days.length - 1;
+  $("d-next").disabled = dayIdx <= 0;
+  if (!days.length) {
+    $("d-label").textContent = "";
+    $("d-sub").textContent = "";
+    box.replaceChildren(el("p", "note", t("hist_empty")));
+    return;
+  }
+  const d = days[dayIdx];
+  $("d-label").textContent = dayLabel(d.day);
+  $("d-sub").textContent = t("hist_blocks", { b: d.blocks, t: fmtMin(d.active_min) });
+  const want = d.day, blocks = await api("history_day", want);
+  if (days[dayIdx].day !== want) return;  // moved on while loading
+  if (!blocks.length) { box.replaceChildren(el("p", "note", t("hist_day_empty"))); return; }
+  box.replaceChildren(...blocks.map(b => {
+    const p = el("div", "panel hblock");
+    const when = el("div", "when");
+    when.append(el("span", "", `${b.start}–${b.end}`), el("span", "", fmtMin(b.active_min)));
+    p.append(when, el("p", "", b.summary));
+    if (b.activities.length) {
+      const ul = el("ul", "acts");
+      for (const a of b.activities) {
+        const li = el("li");
+        li.append(el("span", "", a.text), el("span", "", fmtMin(a.minutes)));
+        ul.append(li);
+      }
+      p.append(ul);
+    }
+    if (b.question) p.append(el("p", "subnote", `${t("followup")}: ${b.question}`));
+    return p;
+  }));
+}
+
+function renderDocs() {
+  for (const kind of ["daily", "report"]) {
+    const box = $("docs-" + kind), docs = hist.docs.filter(d => d.kind === kind);
+    if (!docs.length) { box.replaceChildren(el("p", "summary empty", t("docs_empty"))); continue; }
+    box.replaceChildren(...docs.map(d => {
+      const b = el("button");
+      b.append(el("span", "", d.title), el("small", "", d.written));
+      b.onclick = () => openDoc(d);
+      return b;
+    }));
+  }
+}
+
+async function openDoc(d) {
+  const r = await api("read_doc", d.key);
+  if (r.text === null) { toast(t("doc_gone")); return; }
+  docKey = d.key;
+  $("h-title").textContent = t(d.kind === "daily" ? "kind_daily" : "kind_report") + " · " + d.title;
+  $("h-list").classList.add("hidden");
+  $("h-open").classList.remove("hidden");
+  $("h-doc").classList.remove("hidden");
+  $("h-doc").replaceChildren(...markdown(r.text));
+  window.scrollTo(0, 0);
+}
+
+function closeDoc() {
+  docKey = null;
+  $("h-title").textContent = t("history");
+  $("h-list").classList.remove("hidden");
+  $("h-open").classList.add("hidden");
+  $("h-doc").classList.add("hidden");
+  $("h-doc").replaceChildren();
+}
+
+// A small Markdown reader for what the logs and reports use: headings, lists,
+// tables, quotes, rules, **bold**, *italic*, `code`. Built from text nodes, so
+// nothing in a file can become markup.
+function inline(parent, text) {
+  const re = /(\*\*[^*]+\*\*|`[^`]+`|\*[^*\s][^*]*\*|(?<!\w)_[^_\s][^_]*_(?!\w))/g;
+  let i = 0, m;
+  while ((m = re.exec(text))) {
+    if (m.index > i) parent.append(text.slice(i, m.index));
+    const s = m[0];
+    parent.append(s[0] === "`" ? el("code", "", s.slice(1, -1))
+      : s.startsWith("**") ? el("strong", "", s.slice(2, -2)) : el("em", "", s.slice(1, -1)));
+    i = m.index + s.length;
+  }
+  if (i < text.length) parent.append(text.slice(i));
+  return parent;
+}
+
+function markdown(src) {
+  const lines = src.replace(/\r\n/g, "\n").split("\n"), out = [];
+  const cells = l => l.trim().replace(/^\||\|$/g, "").split("|").map(c => c.trim());
+  for (let i = 0; i < lines.length; ) {
+    const l = lines[i];
+    let m;
+    if (!l.trim()) { i++; continue; }
+    if ((m = l.match(/^(#{1,4})\s+(.*)/))) {
+      out.push(inline(el(m[1].length === 1 ? "h2" : m[1].length === 2 ? "h2" : "h3"), m[2])); i++;
+    } else if (/^\s*([-*_])(\s*\1){2,}\s*$/.test(l)) { out.push(el("hr")); i++; }
+    else if (l.trim().startsWith("|") && /^\s*\|?[\s:|-]+\|[\s:|-]*$/.test(lines[i + 1] || "")) {
+      const head = cells(l), wrap = el("div", "tbl"), table = el("table"), tb = el("tbody"), thead = el("thead"), th = el("tr");
+      head.forEach(h => th.append(inline(el("th"), h)));
+      thead.append(th); table.append(thead);
+      i += 2;
+      for (; i < lines.length && lines[i].trim().startsWith("|"); i++) {
+        const tr = el("tr");
+        cells(lines[i]).forEach(c => tr.append(inline(el("td"), c)));
+        tb.append(tr);
+      }
+      table.append(tb); wrap.append(table); out.push(wrap);
+    } else if (/^\s*([-*]|\d+\.)\s+/.test(l)) {
+      const ol = /^\s*\d+\./.test(l), list = el(ol ? "ol" : "ul");
+      for (; i < lines.length && /^\s*([-*]|\d+\.)\s+/.test(lines[i]); i++)
+        list.append(inline(el("li"), lines[i].replace(/^\s*([-*]|\d+\.)\s+/, "")));
+      out.push(list);
+    } else if (l.startsWith(">")) {
+      const q = el("blockquote");
+      for (; i < lines.length && lines[i].startsWith(">"); i++) q.append(inline(el("p"), lines[i].replace(/^>\s?/, "")));
+      out.push(q);
+    } else {
+      const para = [];
+      for (; i < lines.length && lines[i].trim() && !/^(#{1,4}\s|\s*([-*]|\d+\.)\s|>|\s*\|)/.test(lines[i]); i++) para.push(lines[i].trim());
+      out.push(inline(el("p"), para.join(" ")));
+    }
+  }
+  return out;
+}
+
 $("s-wrapup").addEventListener("change", () => $("s-wrapup-time").disabled = !$("s-wrapup").checked);
-document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("settings").classList.contains("hidden")) closeSettings(); });
+document.addEventListener("keydown", e => {
+  if (e.key !== "Escape") return;
+  if (!$("settings").classList.contains("hidden")) closeSettings();
+  else if (!$("history").classList.contains("hidden")) historyBack();
+});
 window.addEventListener("pywebviewready", () => { refresh(); setInterval(refresh, 2000); });
 </script>
 </body>
